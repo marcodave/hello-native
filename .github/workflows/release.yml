@@ -1,0 +1,56 @@
+name: Release native binaries
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            asset_name: hello-native-windows-amd64.exe
+            binary_path: target/hello-native.exe
+          - os: ubuntu-latest
+            asset_name: hello-native-linux-amd64
+            binary_path: target/hello-native
+          - os: macos-latest
+            asset_name: hello-native-macos-arm64
+            binary_path: target/hello-native
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '21'
+          distribution: 'graalvm'
+          cache: 'maven'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build native image
+        run: mvn -Pnative package
+
+      - name: Rename binary
+        shell: bash
+        run: cp "${{ matrix.binary_path }}" "${{ matrix.asset_name }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: ${{ matrix.asset_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
