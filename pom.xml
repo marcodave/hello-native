@@ -56,6 +56,9 @@
               <imageName>hello-native</imageName>
               <mainClass>${mainClass}</mainClass>
               <fallback>false</fallback>
+              <buildArgs>
+                <buildArg>--gc=serial</buildArg>
+              </buildArgs>
             </configuration>
           </plugin>
         </plugins>
